@@ -24,20 +24,18 @@
 <body class="bg-[#f8f4f2] text-[#383533] font-['Rubik'] min-h-screen flex flex-col">
   <div class="container mx-auto px-4 py-6 flex-1">
     <!-- Категории -->
-    <div class="relative mb-8 blur-edges">
+    <div class="relative mb-8 blur-edges z-10">
       <div id="categoryContainer" class="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide py-2">
         <div id="categories" class="flex space-x-3 px-4"></div>
       </div>
     </div>
 
     <!-- Список услуг -->
-    <div id="services" class="grid gap-3 mb-20">
-      <!-- Карточки услуг уже имеют backdrop-blur-[6px] -->
-    </div>
+    <div id="services" class="grid gap-3 mb-20"></div>
 
     <!-- Поиск -->
-    <div class="fixed bottom-4 left-4 right-4">
-      <div class="relative flex items-center bg-transparent backdrop-blur-[3px] rounded-md-[4px] p-2.5 shadow-sm border border-[#e1dedb]/50">
+    <div class="fixed bottom-4 left-4 right-4 z-20">
+      <div class="relative flex items-center bg-transparent backdrop-blur-[3px] rounded p-8 shadow-sm border border-[#e1dedb]/50">
         <svg class="w-5 h-5 text-[#383533] ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
         </svg>
@@ -46,7 +44,7 @@
     </div>
 
     <!-- Модальное окно -->
-    <div id="modal" class="fixed inset-0 bg-black/50 backdrop-blur-[6px] hidden flex items-center justify-center p-4">
+    <div id="modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-30">
       <div class="bg-[#f8f4f2] p-5 rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto shadow-lg">
         <h2 id="modalTitle" class="text-lg font-semibold mb-3"></h2>
         <div id="modalContent" class="text-sm"></div>
