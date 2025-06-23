@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
@@ -45,163 +6,52 @@
   <title>Текстильное ателье</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .blur-edges::before, .blur-edges::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 3rem;
+      z-index: 10;
+    }
+    .blur-edges::before { left: 0; background: linear-gradient(to right, #f8f4f2, transparent); }
+    .blur-edges::after { right: 0; background: linear-gradient(to left, #f8f4f2, transparent); }
+  </style>
 </head>
-<body class="bg-[#f8f4f2] text-[#383533] font-['Rubik']">
-  <div class="container mx-auto px-4 py-8">
+<body class="bg-[#f8f4f2] text-[#383533] font-['Rubik'] min-h-screen flex flex-col">
+  <div class="container mx-auto px-4 py-6 flex-1">
     <!-- Категории -->
-    <div class="relative overflow-hidden mb-8">
-      <div id="categoryContainer" class="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory">
-        <div id="categories" class="flex space-x-4 px-6"></div>
+    <div class="relative mb-8 blur-edges">
+      <div id="categoryContainer" class="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide py-2">
+        <div id="categories" class="flex space-x-3 px-4"></div>
       </div>
-      <div class="absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-[#f8f4f2] to-transparent backdrop-blur-sm"></div>
-      <div class="absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-[#f8f4f2] to-transparent backdrop-blur-sm"></div>
     </div>
 
     <!-- Список услуг -->
-    <div id="services" class="grid gap-4 mb-24"></div>
+    <div id="services" class="grid gap-3 mb-20"></div>
 
     <!-- Поиск -->
     <div class="fixed bottom-4 left-4 right-4">
-      <div class="relative flex items-center bg-transparent backdrop-blur-[3px] rounded-full p-3 shadow-md">
-        <svg class="w-6 h-6 text-[#383533] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="relative flex items-center bg-transparent backdrop-blur-[3px] rounded-full p-2.5 shadow-sm border border-[#e1dedb]/50">
+        <svg class="w-5 h-5 text-[#383533] ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
         </svg>
-        <input id="searchInput" type="text" placeholder="Поиск..." class="bg-transparent outline-none w-full text-[#383533] placeholder-[#383533]">
+        <input id="searchInput" type="text" placeholder="Поиск..." class="bg-transparent outline-none w-full text-sm text-[#383533] placeholder-[#383533] pl-2 pr-3">
       </div>
     </div>
 
     <!-- Модальное окно -->
-    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
-      <div class="bg-[#f8f4f2] p-6 rounded-lg max-w-lg w-full max-h-[80vh] overflow-y-auto">
-        <h2 id="modalTitle" class="text-xl font-semibold mb-4"></h2>
-        <div id="modalContent"></div>
-        <button id="closeModal" class="mt-4 text-[#383533] underline">Закрыть</button>
+    <div id="modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4">
+      <div class="bg-[#f8f4f2] p-5 rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto shadow-lg">
+        <h2 id="modalTitle" class="text-lg font-semibold mb-3"></h2>
+        <div id="modalContent" class="text-sm"></div>
+        <button id="closeModal" class="mt-3 text-[#383533] text-sm underline">Закрыть</button>
       </div>
     </div>
   </div>
-
-  <xaiArtifact artifact_id="b6691c4f-3e16-4a18-937e-2c41d8b96eaf" artifact_version_id="4238cb84-7741-4e81-aee9-de98a650663d" title="index.ts" contentType="text/typescript">
-import data from './data.json';
-
-interface Service {
-  title: string;
-  description: string;
-  icon: string;
-  details?: { [key: string]: { [key: string]: string } };
-}
-
-interface Category {
-  name: string;
-  services: Service[];
-}
-
-const categories: Category[] = data.categories;
-
-const categoryContainer = document.getElementById('categories')!;
-const servicesContainer = document.getElementById('services')!;
-const searchInput = document.getElementById('searchInput') as HTMLInputElement;
-const modal = document.getElementById('modal')!;
-const modalTitle = document.getElementById('modalTitle')!;
-const modalContent = document.getElementById('modalContent')!;
-const closeModal = document.getElementById('closeModal')!;
-
-let activeCategory = categories[0].name;
-
-function renderCategories() {
-  categoryContainer.innerHTML = categories
-    .map(
-      (cat) =>
-        `<button class="text-lg font-medium snap-center px-4 py-2 whitespace-nowrap ${
-          cat.name === activeCategory ? 'bg-[#fbede0]' : ''
-        }" data-category="${cat.name}">${cat.name}</button>`
-    )
-    .join('');
-}
-
-function renderServices(categoryName: string) {
-  const category = categories.find((cat) => cat.name === categoryName)!;
-  servicesContainer.innerHTML = category.services
-    .map(
-      (service) => `
-        <div class="bg-transparent backdrop-blur-[6px] rounded-lg p-4 flex items-start space-x-4 cursor-pointer" data-service="${service.title}">
-          <img src="${service.icon}" alt="${service.title}" class="w-8 h-8">
-          <div>
-            <h3 class="font-semibold">${service.title}</h3>
-            <p>${service.description}</p>
-          </div>
-        </div>
-      `
-    )
-    .join('');
-}
-
-function renderModal(service: Service) {
-  modalTitle.textContent = service.title;
-  modalContent.innerHTML = service.details
-    ? Object.entries(service.details)
-        .map(
-          ([section, items]) => `
-            <div class="mb-4">
-              <h4 class="font-medium">${section}</h4>
-              <ul class="list-disc pl-5">
-                ${Object.entries(items)
-                  .map(([key, value]) => `<li>${key}: ${value}</li>`)
-                  .join('')}
-              </ul>
-            </div>
-          `
-        )
-        .join('')
-    : 'Нет подробной информации';
-  modal.classList.remove('hidden');
-}
-
-function filterServices(query: string) {
-  const category = categories.find((cat) => cat.name === activeCategory)!;
-  servicesContainer.innerHTML = category.services
-    .filter((service) => service.title.toLowerCase().includes(query.toLowerCase()) || service.description.toLowerCase().includes(query.toLowerCase()))
-    .map(
-      (service) => `
-        <div class="bg-transparent backdrop-blur-[6px] rounded-lg p-4 flex items-start space-x-4 cursor-pointer" data-service="${service.title}">
-          <img src="${service.icon}" alt="${service.title}" class="w-8 h-8">
-          <div>
-            <h3 class="font-semibold">${service.title}</h3>
-            <p>${service.description}</p>
-          </div>
-        </div>
-      `
-    )
-    .join('');
-}
-
-renderCategories();
-renderServices(activeCategory);
-
-categoryContainer.addEventListener('click', (e) => {
-  const target = (e.target as HTMLElement).closest('[data-category]');
-  if (target) {
-    activeCategory = target.getAttribute('data-category')!;
-    renderCategories();
-    renderServices(activeCategory);
-    searchInput.value = '';
-  }
-});
-
-servicesContainer.addEventListener('click', (e) => {
-  const target = (e.target as HTMLElement).closest('[data-service]');
-  if (target) {
-    const serviceTitle = target.getAttribute('data-service')!;
-    const service = categories
-      .find((cat) => cat.name === activeCategory)!
-      .services.find((s) => s.title === serviceTitle)!;
-    renderModal(service);
-  }
-});
-
-closeModal.addEventListener('click', () => {
-  modal.classList.add('hidden');
-});
-
-searchInput.addEventListener('input', (e) => {
-  filterServices((e.target as HTMLInputElement).value);
-});
+  <script type="module" src="index.ts"></script>
+</body>
+</html>
