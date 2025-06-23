@@ -26,8 +26,8 @@ fetch('./data.json')
       const category = categories.find(cat => cat.name === categoryName);
       servicesContainer.innerHTML = category.services
         .map(service => `
-          <div class="bg-transparent backdrop-blur-[6px] rounded-lg p-3 flex items-start space-x-3 cursor-pointer border border-[#e1dedb]/50" data-service="${service.title}">
-            <img src="${service.icon}" alt="${service.title}" class="w-6 h-6">
+          <div class="bg-white/10 backdrop-blur-[6px] rounded-lg p-3 flex items-start space-x-3 cursor-pointer border border-[#e1dedb]/50" data-service="${service.title}">
+            <svg class="w-6 h-6 text-[#383533]" fill="none" stroke="currentColor" viewBox="0 0 24 24">${service.icon}</svg>
             <div>
               <h3 class="font-semibold text-sm">${service.title}</h3>
               <p class="text-xs">${service.description}</p>
@@ -64,8 +64,8 @@ fetch('./data.json')
           service.description.toLowerCase().includes(query.toLowerCase())
         )
         .map(service => `
-          <div class="bg-transparent backdrop-blur-[6px] rounded-lg p-3 flex items-start space-x-3 cursor-pointer border border-[#e1dedb]/50" data-service="${service.title}">
-            <img src="${service.icon}" alt="${service.title}" class="w-6 h-6">
+          <div class="bg-white/10 backdrop-blur-[6px] rounded-lg p-3 flex items-start space-x-3 cursor-pointer border border-[#e1dedb]/50" data-service="${service.title}">
+            <svg class="w-6 h-6 text-[#383533]" fill="none" stroke="currentColor" viewBox="0 0 24 24">${service.icon}</svg>
             <div>
               <h3 class="font-semibold text-sm">${service.title}</h3>
               <p class="text-xs">${service.description}</p>
