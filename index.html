@@ -130,6 +130,7 @@
 
         let activeCategory = categories[0].name;
         let isSearching = false;
+        let lastScrollY = window.scrollY;
 
         function renderCategories() {
           categoryContainer.innerHTML = categories
@@ -310,6 +311,8 @@
         // Обработка фокуса на поле поиска
         searchInput.addEventListener('focus', () => {
           searchContainer.classList.add('search-focused');
+          // Автоскролл вверх при фокусе на поиск
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         });
 
         searchInput.addEventListener('blur', () => {
@@ -319,6 +322,26 @@
               searchContainer.classList.remove('search-focused');
             }
           }, 150);
+        });
+
+        // Отслеживание направления скролла
+        let scrollTimer;
+        window.addEventListener('scroll', () => {
+          const currentScrollY = window.scrollY;
+          const scrollDirection = currentScrollY > lastScrollY ? 'down' : 'up';
+          
+          // Убираем фокус с поиска только при скролле вниз
+          if (scrollDirection === 'down' && document.activeElement === searchInput) {
+            // Небольшая задержка чтобы избежать случайного убирания при коротком скролле
+            clearTimeout(scrollTimer);
+            scrollTimer = setTimeout(() => {
+              if (window.scrollY > lastScrollY + 20) { // Минимум 20px скролла вниз
+                searchInput.blur();
+              }
+            }, 100);
+          }
+          
+          lastScrollY = currentScrollY;
         });
 
         // Инициализация
