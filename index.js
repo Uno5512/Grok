@@ -57,22 +57,60 @@ fetch('./data.json')
     }
 
     function filterServices(query) {
-      const category = categories.find(cat => cat.name === activeCategory);
-      servicesContainer.innerHTML = category.services
-        .filter(service => 
-          service.title.toLowerCase().includes(query.toLowerCase()) || 
-          service.description.toLowerCase().includes(query.toLowerCase())
-        )
-        .map(service => `
-          <div class="bg-white/10 backdrop-blur-[6px] rounded-lg p-3 flex items-start space-x-3 cursor-pointer border border-[#e1dedb]/50" data-service="${service.title}">
-            <svg class="w-6 h-6 text-[#383533]" fill="none" stroke="currentColor" viewBox="0 0 24 24">${service.icon}</svg>
-            <div>
-              <h3 class="font-semibold text-sm">${service.title}</h3>
-              <p class="text-xs">${service.description}</p>
-            </div>
-          </div>
-        `)
-        .join('');
+      query = query.toLowerCase();
+      let found = false;
+      categories.forEach(cat => {
+        const matchingServices = cat.services.filter(service => 
+          service.title.toLowerCase().includes(query) ||
+          service.description.toLowerCase().includes(query) ||
+          (service.details && Object.entries(service.details).some(([section, items]) =>
+            section.toLowerCase().includes(query) ||
+            Object.keys(items).some(key => key.toLowerCase().includes(query)) ||
+            Object.values(items).some(value => value.toLowerCase().includes(query))
+          ))
+        );
+        if (matchingServices.length > 0 && cat.name !== activeCategory) {
+          activeCategory = cat.name;
+          renderCategories();
+          found = true;
+        }
+        if (cat.name === activeCategory) {
+          servicesContainer.innerHTML = cat.services
+            .filter(service => 
+              service.title.toLowerCase().includes(query) ||
+              service.description.toLowerCase().includes(query) ||
+              (service.details && Object.entries(service.details).some(([section, items]) =>
+                section.toLowerCase().includes(query) ||
+                Object.keys(items).some(key => key.toLowerCase().includes(query)) ||
+                Object.values(items).some(value => value.toLowerCase().includes(query))
+              ))
+            )
+            .map(service => `
+              <div class="bg-white/10 backdrop-blur-[6px] rounded-lg p-3 flex items-start space-x-3 cursor-pointer border border-[#e1dedb]/50" data-service="${service.title}">
+                <svg class="w-6 h-6 text-[#383533]" fill="none" stroke="currentColor" viewBox="0 0 24 24">${service.icon}</svg>
+                <div>
+                  <h3 class="font-semibold text-sm">${service.title}</h3>
+                  <p class="text-xs">${service.description}</p>
+                </div>
+              </div>
+            `)
+            .join('');
+          // Открываем модалку, если найдено совпадение в details
+          const service = cat.services.find(s => 
+            s.details && Object.entries(s.details).some(([section, items]) =>
+              section.toLowerCase().includes(query) ||
+              Object.keys(items).some(key => key.toLowerCase().includes(query)) ||
+              Object.values(items).some(value => value.toLowerCase().includes(query))
+            )
+          );
+          if (service && query) {
+            renderModal(service);
+          }
+        }
+      });
+      if (!found && query) {
+        servicesContainer.innerHTML = '<p class="text-sm text-center">Ничего не найдено</p>';
+      }
     }
 
     renderCategories();
@@ -85,6 +123,7 @@ fetch('./data.json')
         renderCategories();
         renderServices(activeCategory);
         searchInput.value = '';
+        modal.classList.add('hidden');
       }
     });
 
