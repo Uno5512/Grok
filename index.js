@@ -1,59 +1,110 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Текстильное ателье</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600&display=swap" rel="stylesheet">
-  <style>
-    .scrollbar-hide::-webkit-scrollbar { display: none; }
-    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-    .blur-edges::before, .blur-edges::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      width: 3rem;
-      z-index: 10;
+fetch('./data.json')
+  .then(response => response.json())
+  .then(data => {
+    const categories = data.categories;
+    const categoryContainer = document.getElementById('categories');
+    const servicesContainer = document.getElementById('services');
+    const searchInput = document.getElementById('searchInput');
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalContent = document.getElementById('modalContent');
+    const closeModal = document.getElementById('closeModal');
+
+    let activeCategory = categories[0].name;
+
+    function renderCategories() {
+      categoryContainer.innerHTML = categories
+        .map(cat => `
+          <button class="text-base font-medium snap-center px-3 py-1.5 rounded-md whitespace-nowrap ${cat.name === activeCategory ? 'bg-[#fbede0]' : ''}" data-category="${cat.name}">
+            ${cat.name}
+          </button>
+        `)
+        .join('');
     }
-    .blur-edges::before { left: 0; background: linear-gradient(to right, #f8f4f2, transparent); }
-    .blur-edges::after { right: 0; background: linear-gradient(to left, #f8f4f2, transparent); }
-  </style>
-</head>
-<body class="bg-[#f8f4f2] text-[#383533] font-['Rubik'] min-h-screen flex flex-col">
-  <div class="container mx-auto px-4 py-6 flex-1">
-    <!-- Категории -->
-    <div class="relative mb-8 blur-edges">
-      <div id="categoryContainer" class="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide py-2">
-        <div id="categories" class="flex space-x-3 px-4"></div>
-      </div>
-    </div>
 
-    <!-- Список услуг -->
-    <div id="services" class="grid gap-3 mb-20">
-      <!-- Карточки услуг уже имеют backdrop-blur-[6px] -->
-    </div>
+    function renderServices(categoryName) {
+      const category = categories.find(cat => cat.name === categoryName);
+      servicesContainer.innerHTML = category.services
+        .map(service => `
+          <div class="bg-transparent backdrop-blur-[6px] rounded-lg p-3 flex items-start space-x-3 cursor-pointer border border-[#e1dedb]/50" data-service="${service.title}">
+            <img src="${service.icon}" alt="${service.title}" class="w-6 h-6">
+            <div>
+              <h3 class="font-semibold text-sm">${service.title}</h3>
+              <p class="text-xs">${service.description}</p>
+            </div>
+          </div>
+        `)
+        .join('');
+    }
 
-    <!-- Поиск -->
-    <div class="fixed bottom-4 left-4 right-4">
-      <div class="relative flex items-center bg-transparent backdrop-blur-[3px] rounded-sm p-2.5 shadow-sm border border-[#e1dedb]/50">
-        <svg class="w-5 h-5 text-[#383533] ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-        </svg>
-        <input id="searchInput" type="text" placeholder="Поиск..." class="bg-transparent outline-none w-full text-sm text-[#383533] placeholder-[#383533] pl-2 pr-3">
-      </div>
-    </div>
+    function renderModal(service) {
+      modalTitle.textContent = service.title;
+      modalContent.innerHTML = service.details
+        ? Object.entries(service.details)
+            .map(([section, items]) => `
+              <div class="mb-3">
+                <h4 class="font-medium text-sm">${section}</h4>
+                <ul class="list-disc pl-4 text-xs">
+                  ${Object.entries(items)
+                    .map(([key, value]) => `<li>${key}: ${value}</li>`)
+                    .join('')}
+                </ul>
+              </div>
+            `)
+            .join('')
+        : 'Нет подробной информации';
+      modal.classList.remove('hidden');
+    }
 
-    <!-- Модальное окно -->
-    <div id="modal" class="fixed inset-0 bg-black/50 backdrop-blur-[6px] hidden flex items-center justify-center p-4">
-      <div class="bg-[#f8f4f2] p-5 rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto shadow-lg">
-        <h2 id="modalTitle" class="text-lg font-semibold mb-3"></h2>
-        <div id="modalContent" class="text-sm"></div>
-        <button id="closeModal" class="mt-3 text-[#383533] text-sm underline">Закрыть</button>
-      </div>
-    </div>
-  </div>
-  <script src="index.js"></script>
-</body>
-</html>
+    function filterServices(query) {
+      const category = categories.find(cat => cat.name === activeCategory);
+      servicesContainer.innerHTML = category.services
+        .filter(service => 
+          service.title.toLowerCase().includes(query.toLowerCase()) || 
+          service.description.toLowerCase().includes(query.toLowerCase())
+        )
+        .map(service => `
+          <div class="bg-transparent backdrop-blur-[6px] rounded-lg p-3 flex items-start space-x-3 cursor-pointer border border-[#e1dedb]/50" data-service="${service.title}">
+            <img src="${service.icon}" alt="${service.title}" class="w-6 h-6">
+            <div>
+              <h3 class="font-semibold text-sm">${service.title}</h3>
+              <p class="text-xs">${service.description}</p>
+            </div>
+          </div>
+        `)
+        .join('');
+    }
+
+    renderCategories();
+    renderServices(activeCategory);
+
+    categoryContainer.addEventListener('click', e => {
+      const target = e.target.closest('[data-category]');
+      if (target) {
+        activeCategory = target.getAttribute('data-category');
+        renderCategories();
+        renderServices(activeCategory);
+        searchInput.value = '';
+      }
+    });
+
+    servicesContainer.addEventListener('click', e => {
+      const target = e.target.closest('[data-service]');
+      if (target) {
+        const serviceTitle = target.getAttribute('data-service');
+        const service = categories
+          .find(cat => cat.name === activeCategory)
+          .services.find(s => s.title === serviceTitle);
+        renderModal(service);
+      }
+    });
+
+    closeModal.addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+
+    searchInput.addEventListener('input', e => {
+      filterServices(e.target.value);
+    });
+  })
+  .catch(error => console.error('Ошибка загрузки data.json:', error));
