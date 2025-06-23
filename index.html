@@ -133,6 +133,30 @@
           document.body.classList.remove('no-scroll');
         }
 
+        function scrollToCategory(categoryName) {
+          const categoryButton = document.querySelector(`[data-category="${categoryName}"]`);
+          const container = document.getElementById('categoryContainer');
+          
+          if (categoryButton && container) {
+            const buttonRect = categoryButton.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            
+            // Вычисляем позицию кнопки относительно контейнера
+            const buttonLeft = categoryButton.offsetLeft;
+            const buttonWidth = categoryButton.offsetWidth;
+            const containerWidth = container.offsetWidth;
+            
+            // Вычисляем нужную позицию скролла чтобы кнопка была в центре
+            const scrollPosition = buttonLeft - (containerWidth / 2) + (buttonWidth / 2);
+            
+            // Плавно прокручиваем
+            container.scrollTo({
+              left: scrollPosition,
+              behavior: 'smooth'
+            });
+          }
+        }
+
         // Инициализация
         renderCategories();
         renderServices(activeCategory);
@@ -145,6 +169,11 @@
             renderCategories();
             renderServices(activeCategory);
             closeModalHandler();
+            
+            // Прокручиваем выбранную категорию в центр
+            setTimeout(() => {
+              scrollToCategory(activeCategory);
+            }, 50); // Небольшая задержка чтобы DOM успел обновиться
           }
         });
 
