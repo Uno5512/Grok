@@ -81,7 +81,7 @@
     
     <!-- Поиск -->
     <div class="fixed bottom-4 left-4 right-4 z-20 search-container" id="searchContainer">
-      <div class="relative flex items-center bg-transparent backdrop-blur-[3px] p-3 shadow-sm border border-[#e1dedb]/50" style="border-radius: 10px;">
+      <div class="relative flex items-center search-bar p-4 rounded-xl border border-[#e1dedb]/30">
         <svg class="w-5 h-5 text-[#383533] ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
         </svg>
@@ -130,7 +130,6 @@
 
         let activeCategory = categories[0].name;
         let isSearching = false;
-        let highlightTimeout;
 
         function renderCategories() {
           categoryContainer.innerHTML = categories
@@ -142,7 +141,7 @@
             .join('');
         }
 
-        function renderServices(categoryName, highlightService = null) {
+        function renderServices(categoryName) {
           const category = categories.find(cat => cat.name === categoryName);
           
           if (!category || !category.services || category.services.length === 0) {
@@ -152,9 +151,8 @@
 
           servicesContainer.innerHTML = category.services
             .map(service => {
-              const isHighlighted = highlightService && service.title === highlightService;
               return `
-                <div class="service-card bg-white/10 backdrop-blur-[6px] rounded-lg p-3 flex items-start space-x-3 cursor-pointer border border-[#e1dedb]/50 transition-all hover:bg-white/20 ${isHighlighted ? 'highlight-card' : ''}" data-service="${service.title}">
+                <div class="service-card bg-white/10 backdrop-blur-[6px] rounded-lg p-3 flex items-start space-x-3 cursor-pointer border border-[#e1dedb]/50 transition-all hover:bg-white/20" data-service="${service.title}">
                   <svg class="w-6 h-6 text-[#383533] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">${service.icon}</svg>
                   <div>
                     <h3 class="font-semibold text-sm">${service.title}</h3>
@@ -164,17 +162,6 @@
               `;
             })
             .join('');
-
-          // Убираем подсветку через время
-          if (highlightService) {
-            clearTimeout(highlightTimeout);
-            highlightTimeout = setTimeout(() => {
-              const highlightedCard = document.querySelector('.highlight-card');
-              if (highlightedCard) {
-                highlightedCard.classList.remove('highlight-card');
-              }
-            }, 3000);
-          }
         }
 
         function renderModal(service) {
@@ -232,10 +219,9 @@
           isSearching = true;
           query = query.toLowerCase();
 
-          let foundService = null;
-          let foundCategory = null;
+          // Собираем все релевантные услуги из всех категорий
+          let allRelevantServices = [];
 
-          // Ищем по всем категориям
           for (const cat of categories) {
             if (!cat.services) continue;
             
@@ -245,26 +231,72 @@
               const matchesDetails = searchInDetails(service, query);
 
               if (matchesTitle || matchesDescription || matchesDetails) {
-                foundService = service;
-                foundCategory = cat;
-                break;
+                allRelevantServices.push({
+                  service: service,
+                  category: cat,
+                  relevanceScore: (matchesTitle ? 3 : 0) + (matchesDescription ? 2 : 0) + (matchesDetails ? 1 : 0)
+                });
               }
             }
-            if (foundService) break;
           }
 
-          if (foundService && foundCategory) {
-            // Переключаем категорию, если нужно
-            if (activeCategory !== foundCategory.name) {
-              activeCategory = foundCategory.name;
+          if (allRelevantServices.length > 0) {
+            // Сортируем по релевантности (выше балл = выше в списке)
+            allRelevantServices.sort((a, b) => b.relevanceScore - a.relevanceScore);
+            
+            // Находим самую релевантную категорию
+            const topResult = allRelevantServices[0];
+            
+            // Переключаем категорию если нужно
+            if (activeCategory !== topResult.category.name) {
+              activeCategory = topResult.category.name;
               renderCategories();
             }
             
-            // Показываем услуги с подсветкой найденной
-            renderServices(activeCategory, foundService.title);
+            // Показываем отсортированные результаты
+            renderSortedSearchResults(allRelevantServices, query);
+            
+            // Прокручиваем вверх для просмотра результатов
+            window.scrollTo({ top: 0, behavior: 'smooth' });
           } else {
-            servicesContainer.innerHTML = '<p class="text-sm text-center text-[#383533]/60 py-8">Ничего не найдено</p>';
+            // При отсутствии результатов остаемся в поиске, но показываем сообщение
+            servicesContainer.innerHTML = '<div class="text-center py-8"><p class="text-sm text-[#383533]/60 mb-2">Ничего не найдено</p><p class="text-xs text-[#383533]/40">Попробуйте изменить запрос</p></div>';
+            // Не сбрасываем фокус и состояние поиска
           }
+        }
+
+        function renderSortedSearchResults(relevantServices, query) {
+          // Показываем только услуги из текущей активной категории, но отсортированные
+          const currentCategoryServices = relevantServices.filter(item => item.category.name === activeCategory);
+          
+          if (currentCategoryServices.length === 0) {
+            servicesContainer.innerHTML = '<p class="text-sm text-center text-[#383533]/60 py-8">Ничего не найдено в текущей категории</p>';
+            return;
+          }
+
+          servicesContainer.innerHTML = currentCategoryServices
+            .map((item, index) => {
+              const service = item.service;
+              const isTopResult = index === 0; // Подсвечиваем самый релевантный
+              return `
+                <div class="service-card bg-white/10 backdrop-blur-[6px] rounded-lg p-3 flex items-start space-x-3 cursor-pointer border border-[#e1dedb]/50 transition-all hover:bg-white/20 ${isTopResult ? 'highlight-card' : ''}" data-service="${service.title}">
+                  <svg class="w-6 h-6 text-[#383533] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">${service.icon}</svg>
+                  <div>
+                    <h3 class="font-semibold text-sm">${service.title}</h3>
+                    <p class="text-xs text-[#383533]/80">${service.description}</p>
+                  </div>
+                </div>
+              `;
+            })
+            .join('');
+
+          // Убираем подсветку через время
+          setTimeout(() => {
+            const highlightedCard = document.querySelector('.highlight-card');
+            if (highlightedCard) {
+              highlightedCard.classList.remove('highlight-card');
+            }
+          }, 3000);
         }
 
         function clearSearchHandler() {
@@ -283,10 +315,10 @@
         searchInput.addEventListener('blur', () => {
           // Задержка для предотвращения мигания при переключении на другой элемент
           setTimeout(() => {
-            if (document.activeElement !== searchInput) {
+            if (document.activeElement !== searchInput && document.activeElement !== clearSearch) {
               searchContainer.classList.remove('search-focused');
             }
-          }, 100);
+          }, 150);
         });
 
         // Инициализация
@@ -300,10 +332,13 @@
             activeCategory = target.getAttribute('data-category');
             renderCategories();
             renderServices(activeCategory);
+            // Полный сброс поиска
             searchInput.value = '';
             clearSearch.classList.add('hidden');
             closeModalHandler();
             isSearching = false;
+            // Убираем фокус с поиска чтобы избежать проблем
+            searchContainer.classList.remove('search-focused');
           }
         });
 
@@ -330,10 +365,21 @@
         });
 
         searchInput.addEventListener('input', e => {
+          // Сохраняем состояние фокуса
+          const wasFocused = document.activeElement === searchInput;
           filterServices(e.target.value);
+          // Восстанавливаем фокус если он был
+          if (wasFocused) {
+            setTimeout(() => searchInput.focus(), 10);
+          }
         });
 
-        clearSearch.addEventListener('click', clearSearchHandler);
+        clearSearch.addEventListener('click', e => {
+          e.preventDefault();
+          clearSearchHandler();
+          // Возвращаем фокус на поле поиска
+          searchInput.focus();
+        });
 
         // Закрытие модалки по Escape
         document.addEventListener('keydown', e => {
